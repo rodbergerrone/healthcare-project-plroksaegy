@@ -18,7 +18,7 @@ def validate_cols(uploaded_document):
     uploaded_document: Name of the csv file uploaded by the user.
     """
     #Load data using pandas
-    user_data = pd.read_excel('Healthcare_dataset.xlsx', engine='openpyxl')
+    user_data = pd.read_excel(uploaded_document, engine='openpyxl', index_col=None)
 
     if user_data.isnull().any().any():
         return "Dataset validation failed: Data contains missing values"
@@ -28,6 +28,9 @@ def validate_cols(uploaded_document):
         myTemplate = json.load(file)
     myTemplate = pd.DataFrame(myTemplate)   #Convert it to DataFrame for easier acces
     myTemplate.set_index('Columns', inplace=True)
+
+    list(set(user_data.columns).difference(list(myTemplate.index)))
+
 
     #Load dict() mapping from Pickle file
     with open('columns_encode.pickle', 'rb') as file:
@@ -46,19 +49,20 @@ def validate_cols(uploaded_document):
             if str(user_data[col].dtype) == 'object':
                 invalid = np.logical_not(np.isin(user_data[col].unique(), list(columns_map[col].keys()))) #Gathers invvalues not in dictionary
                 if invalid.any() == True:
-                    return(f"{col} Column Validation failed:\n" \
-                        f"The following values are invalid:\n" \
-                        f"{user_data[col].unique()[invalid]}")
-            
-                 
+                    return(f"{col} Column Validation failed." \
+                        f" The following values are invalid." \
+                        f"  {user_data[col].unique()[invalid]}")
+
+
         return("Columns validation was successful")
     else:
         missing_in_json = list(set(user_data.columns).difference(list(myTemplate.index)))
-        if not missing_in_json:
+        if  len(missing_in_json) > 0:
             return('Columns validation has failed\nThe following columns are not needed: ', missing_in_json)
         else:
             missing_in_data = list(set(list(myTemplate.index)).difference(user_data.columns))
-            return('Columns validation has failed\nThe following columns were not in your data: ', missing_in_data)
+            if len(missing_in_data) > 0:
+                return('Columns validation has failed\nThe following columns were not in your data: ', missing_in_data)
 
 
 
